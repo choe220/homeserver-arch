@@ -54,6 +54,10 @@
           - cockpit-packagekit  # for managing system packages.
           - firewalld           # for managing the Firewall using the Cockpit in Networking.
           - udisks2             # for managing Storage.
+          - python-llfuse       # bindings for fuse mounting
+          - python-pip          # package manager
+          - python-setuptools   # additional packaging tools
+          - python-pexpect      # child application control
 
   # YAY FOR THE AUR REPOSITORY ----------------------------------------------------
     - name: disable the need for password for pacman to allow yay install
