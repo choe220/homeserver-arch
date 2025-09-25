@@ -293,6 +293,15 @@
           - ansible_facts['virtualization_role'] == 'guest'
           - ansible_facts['virtualization_type'] == 'virtualbox'
 
+    - name: if virtualbox, add user to vboxsf group
+      user:
+          name: "{{ ansible_user }}"
+          groups: vboxsf
+          append: yes
+      when:
+          - ansible_facts['virtualization_role'] == 'guest'
+          - ansible_facts['virtualization_type'] == 'virtualbox'
+
   # XCPNG  ---------------------------------------------------------------------
     - block:
         - name: if xcpng - xen, install guest additions using yay
