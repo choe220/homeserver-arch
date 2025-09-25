@@ -1,0 +1,378 @@
+---
+- name: playbook_core.yml - archlinux base setup
+  hosts: all
+  become: yes
+
+  tasks:
+  # ARCH FULL UPDATE  ----------------------------------------------------------
+    - name: update arch
+      pacman:
+        update_cache: yes
+        upgrade: yes
+
+  # INSTALL BASE PACKAGES ----------------------------------------------------
+    - name: install core packages
+      pacman:
+        update_cache: yes
+        name:
+          - nano              # editor
+          - man-db            # help pages
+          - tdlr              # easy help pages
+          - git               # to clone github repos
+          - curl              # download utility
+          - wget              # download utility
+          - rsync             # copy utility
+          - yazi              # file manager
+          - fzf               # fuzzy filter, useful for file search
+          - bat               # prettier cat
+          - tree              # show files/directory structure
+          - unarchiver        # extract any archive
+          - fastfetch         # system info
+          - inxi              # system info
+          - dust              # storage info
+          - dysk              # storage info
+          - ncdu              # investigate disk space usage
+          - htop              # resource monitor
+          - btop              # better resource monitor
+          - glances           # system monitor
+          - iotop             # disk use monitor
+          - nethogs           # network monitor per process
+          - nmap              # network scan
+          - openbsd-netcat    # disgnose network issues using tiny server
+          - tcpdump           # diagnose network issues by watching ports
+          - inetutils         # network utilities like hostname
+          - net-tools         # network utilites like arp, netstat
+          - iperf3            # network speed test tool
+          - iproute2          # network utilities like ss
+          - bind              # DNS utilities, like nslookup
+          - nload             # monitor bandwidth
+          - sysfsutils        # utilities to deal with sysfs
+          - lsof              # list open files
+          - fuse              # mounting file systems
+
+  # YAY FOR THE AUR REPOSITORY ----------------------------------------------------
+    - name: disable the need for password for pacman to allow yay install
+      lineinfile:
+        path: /etc/sudoers.d/temp_allow_no_pswd_pacman
+        state: present
+        line: "ALL ALL=NOPASSWD: /usr/bin/pacman"
+        validate: /usr/sbin/visudo -cf %s
+        create: yes
+
+    - name: git clone yay-bin repo in to /tmp
+      become: no
+      git:
+        repo: 'https://aur.archlinux.org/yay-bin.git'
+        dest: /tmp/yay-bin
+        clone: yes
+
+    - name: install yay using makepkg
+      become: no
+      expect:
+        chdir: /tmp/yay-bin
+        command: makepkg -si
+        responses:
+          (?i)Proceed with installation: "y"
+
+    - name: re-enable need for password for pacman
+      file:
+        path: /etc/sudoers.d/temp_allow_no_pswd_pacman
+        state: absent
+
+    - name: set yay options to cleanafter package installation
+      become: no
+      shell: yay -Y --answerclean All --removemake --cleanafter --save
+      args:
+        executable: /usr/bin/bash
+
+  # SYSTEM SETTINGS CHANGES ----------------------------------------------------
+    - name: pacman - enable color
+      lineinfile:
+        path: /etc/pacman.conf
+        regexp: '^#Color$'
+        line: 'Color'
+
+    - name: makepkg - disable compression
+      lineinfile:
+        path: /etc/makepkg.conf
+        regexp: "PKGEXT='.pkg.tar.zst'"
+        line: "PKGEXT='.pkg.tar'"
+
+    - name: makepkg - enable parallel compilation MAKEFLAGS="-j$(nproc)"
+      lineinfile:
+        path: /etc/makepkg.conf
+        regexp: '#MAKEFLAGS="-j2"'
+        line: 'MAKEFLAGS="-j$(nproc)"'
+
+    - name: change number of failed logins that triger 10min lockout
+      lineinfile:
+        path: /etc/security/faillock.conf
+        regexp: '^# deny = 3$'
+        line: 'deny = 10'
+
+    - name: enable members of wheel group to sudo
+      lineinfile:
+        path: /etc/sudoers.d/98_wheel_allow_sudo
+        state: present
+        line: "%wheel ALL=(ALL:ALL) ALL"
+        validate: /usr/sbin/visudo -cf %s
+        create: yes
+
+  # USERS PERMISSIONS  ---------------------------------------------------------
+    - name: add the user to the root group, to be able to enter directories
+      user:
+        name: "{{ ansible_user }}"
+        groups: root
+        append: yes
+
+    - name: disable need for sudo password for the current user
+      lineinfile:
+        path: "/etc/sudoers.d/99_no_pswd_for_{{ ansible_user }}"
+        state: present
+        line: "{{ ansible_user }} ALL=(ALL:ALL) NOPASSWD: ALL"
+        validate: /usr/sbin/visudo -cf %s
+        create: yes
+
+  
+  # SSH ------------------------------------------------------------------------
+    - name: install ssh
+      pacman:
+        name:
+          - openssh
+
+    - name: enable and start ssh service
+      systemd:
+        name: sshd
+        enabled: yes
+        state: started
+
+  # CRONIE  --------------------------------------------------------------------
+    - name: install cronie
+      pacman:
+        name:
+          - cronie
+
+    - name: enable and start cronie.service
+      systemd:
+        name: cronie
+        enabled: yes
+        state: started
+
+  # ARCHLINUX-KEYRING WEEKLY UPDATE  -------------------------------------------
+    - name: archlinux-keyring - enable weekly update
+      systemd:
+        name: archlinux-keyring-wkd-sync.timer
+        enabled: yes
+        state: started
+
+  # CACHE CLEANER SCHEDULED  ---------------------------------------------------
+    - name: install pacman-contrib
+      pacman:
+        name:
+          - pacman-contrib
+
+    - name: enable and start weekly cache cleanup paccache timer
+      systemd:
+        name: paccache.timer
+        enabled: yes
+        state: started
+
+  # REFLECTOR TO REGULARLY UPDATE MIRRORLIST  ---- CHANGE COUNTRY CODES !!! ----
+    - name: install reflector
+      pacman:
+        name:
+          - reflector
+
+    - name: write reflector configuration file
+      copy:
+        dest: '/etc/xdg/reflector/reflector.conf'
+        content: |
+          --save /etc/pacman.d/mirrorlist
+          --protocol http
+          --country US
+          --score 20
+          --sort rate
+
+    - name: enable and start reflector timer
+      systemd:
+        name: reflector.timer
+        enabled: yes
+        state: started
+
+    - name: do initial run of reflector.service
+      systemd:
+        name: reflector.service
+        state: started
+
+  # LOGROTATE  -----------------------------------------------------------------
+    - name: install logrotate
+      pacman:
+        name:
+          - logrotate
+
+    - name: logrotate - enable compression
+      lineinfile:
+        path: /etc/logrotate.conf
+        regexp: '^#compress$'
+        line: 'compress'
+
+    - name: enable and start daily logs rotation, cleanup
+      systemd:
+        name: logrotate.timer
+        enabled: yes
+        state: started
+
+  # HYPERV  --------------------------------------------------------------------
+    - name: if hyperv, install hyperv package
+      pacman:
+        name:
+          - hyperv
+      when:
+          - ansible_facts['virtualization_role'] == 'guest'
+          - ansible_facts['virtualization_type'] == 'VirtualPC'
+
+    - name: if hyperv, enable and start hyperv integration services
+      systemd:
+        name: "{{ item }}"
+        enabled: yes
+        state: started
+      with_items:
+          - hv_kvp_daemon.service
+          - hv_vss_daemon.service
+      when:
+          - ansible_facts['virtualization_role'] == 'guest'
+          - ansible_facts['virtualization_type'] == 'VirtualPC'
+
+  # VMWARE  --------------------------------------------------------------------
+    - name: if vmware, install open-vm-tools
+      pacman:
+        name:
+          - open-vm-tools
+      when:
+          - ansible_facts['virtualization_role'] == 'guest'
+          - ansible_facts['virtualization_type'] == 'VMware'
+
+    - name: if vmware, enable and start vmware open tools services
+      systemd:
+        name: "{{ item }}"
+        enabled: yes
+        state: started
+      with_items:
+          - vmtoolsd.service
+          - vmware-vmblock-fuse.service
+      when:
+          - ansible_facts['virtualization_role'] == 'guest'
+          - ansible_facts['virtualization_type'] == 'VMware'
+
+  # VIRTUALBOX  ----------------------------------------------------------------
+    - name: if virtualbox, install guest additions NON-X version
+      pacman:
+        name:
+          - virtualbox-guest-utils-nox
+      when:
+          - ansible_facts['virtualization_role'] == 'guest'
+          - ansible_facts['virtualization_type'] == 'virtualbox'
+
+    - name: if virtualbox, enable and start vboxservice
+      systemd:
+        name: "{{ item }}"
+        enabled: yes
+        state: started
+      with_items:
+          - vboxservice.service
+      when:
+          - ansible_facts['virtualization_role'] == 'guest'
+          - ansible_facts['virtualization_type'] == 'virtualbox'
+
+  # XCPNG  ---------------------------------------------------------------------
+    - block:
+        - name: if xcpng - xen, install guest additions using yay
+          become: false
+          shell: yay -S --noconfirm --needed xe-guest-utilities-xcp-ng
+          args:
+            executable: /bin/bash
+
+        - name: if xcpng - xen, enable and start xe-linux-distribution service
+          systemd:
+            name: xe-linux-distribution.service
+            enabled: yes
+            state: started
+
+      when:
+        - ansible_facts['virtualization_role'] == 'guest'
+        - ansible_facts['virtualization_type'] == 'xen'
+
+  # NETWORKD CONFIG CHANGE TO MAC
+    - name: check if systemd-networkd is active
+      command: systemctl is-active systemd-networkd
+      register: networkd_status
+      ignore_errors: yes
+
+    - block:
+
+        - name: Starting MAC-based network conversion
+          debug:
+            msg: >
+              Converting network configuration from name-based to MAC-based.
+              This prevents issues if hardware is added.
+              A backup of the network file is created if making changes.
+
+        - name: set facts for the default interface and it's MAC
+          set_fact:
+            primary_iface: "{{ ansible_default_ipv4.interface }}"
+            mac_addr: "{{ hostvars[inventory_hostname]['ansible_' + ansible_default_ipv4.interface]['macaddress'] }}"
+
+        - name: get the path to the network config file of the primary interface
+          command: networkctl status {{ primary_iface }} --json=short
+          register: net_status
+
+        - set_fact:
+            net_config_file: "{{ (net_status.stdout | from_json).NetworkFile }}"
+
+        - name: >
+            edit the network file,
+            replace match by name with match by mac address,
+            make backup if making changes
+          replace:
+            path: "{{ net_config_file }}"
+            regexp: '^Name={{ primary_iface }}[ \t]*$'
+            replace: "PermanentMACAddress={{ mac_addr }}"
+            backup: yes
+
+      when:
+        - networkd_status.stdout == "active"
+
+  # SETUP SHELL AND CONFIGS
+    - name: copy config directory with prefernces, hotkeys, syntax highlight
+        become: no
+        copy:
+          src: .config/yazi
+          dest: ~/.config
+          mode: preserve
+    
+    - name: ensure /root/.config exists
+      file:
+        path: /root/.config
+        state: directory
+        mode: '0755'
+
+    - name: remove root yazi config if it exists
+      file:
+        path: /root/.config/yazi
+        state: absent
+
+    - name: symlink users yazi config for the root, so that it works in sudo
+      file:
+        src: "/home/{{ ansible_user }}/.config/yazi"
+        dest: /root/.config/yazi
+        state: link
+        force: yes
+        follow: false
+
+    - name: set default editor in .bashrc
+      become: no
+      blockinfile:
+        path: ~/.bashrc
+        block: |
+          export EDITOR=yazi
+          export VISUAL=yazi
