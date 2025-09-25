@@ -25,21 +25,21 @@
         dest: ~/.config
         mode: preserve
     
-    - name: ensure /root/.config exists
-      file:
-        path: /root/.config
-        state: directory
-        mode: '0755'
+    # - name: ensure /root/.config exists
+    #   file:
+    #     path: /root/.config
+    #     state: directory
+    #     mode: '0755'
 
-    - name: remove root fish config if it exists
-      file:
-        path: /root/.config/fish
-        state: absent
+    # - name: remove root fish config if it exists
+    #   file:
+    #     path: /root/.config/fish
+    #     state: absent
 
-    - name: symlink users fish config for the root, so that it works in sudo
-      file:
-        src: "/home/{{ ansible_user }}/.config/fish"
-        dest: /root/.config/fish
-        state: link
-        force: yes
-        follow: false
+    # - name: symlink users fish config for the root, so that it works in sudo
+    #   file:
+    #     src: "/home/{{ ansible_user }}/.config/fish"
+    #     dest: /root/.config/fish
+    #     state: link
+    #     force: yes
+    #     follow: false
