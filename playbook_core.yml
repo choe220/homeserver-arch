@@ -15,40 +15,45 @@
       pacman:
         update_cache: yes
         name:
-          - nano              # editor
-          - man-db            # help pages
-          - tdlr              # easy help pages
-          - git               # to clone github repos
-          - curl              # download utility
-          - wget              # download utility
-          - rsync             # copy utility
-          - yazi              # file manager
-          - fzf               # fuzzy filter, useful for file search
-          - bat               # prettier cat
-          - tree              # show files/directory structure
-          - unarchiver        # extract any archive
-          - fastfetch         # system info
-          - inxi              # system info
-          - dust              # storage info
-          - dysk              # storage info
-          - ncdu              # investigate disk space usage
-          - htop              # resource monitor
-          - btop              # better resource monitor
-          - glances           # system monitor
-          - iotop             # disk use monitor
-          - nethogs           # network monitor per process
-          - nmap              # network scan
-          - openbsd-netcat    # disgnose network issues using tiny server
-          - tcpdump           # diagnose network issues by watching ports
-          - inetutils         # network utilities like hostname
-          - net-tools         # network utilites like arp, netstat
-          - iperf3            # network speed test tool
-          - iproute2          # network utilities like ss
-          - bind              # DNS utilities, like nslookup
-          - nload             # monitor bandwidth
-          - sysfsutils        # utilities to deal with sysfs
-          - lsof              # list open files
-          - fuse              # mounting file systems
+          - nano                # editor
+          - man-db              # help pages
+          - tdlr                # easy help pages
+          - git                 # to clone github repos
+          - curl                # download utility
+          - wget                # download utility
+          - rsync               # copy utility
+          - yazi                # file manager
+          - fzf                 # fuzzy filter, useful for file search
+          - bat                 # prettier cat
+          - tree                # show files/directory structure
+          - unarchiver          # extract any archive
+          - fastfetch           # system info
+          - inxi                # system info
+          - dust                # storage info
+          - dysk                # storage info
+          - ncdu                # investigate disk space usage
+          - htop                # resource monitor
+          - btop                # better resource monitor
+          - glances             # system monitor
+          - iotop               # disk use monitor
+          - nethogs             # network monitor per process
+          - nmap                # network scan
+          - openbsd-netcat      # disgnose network issues using tiny server
+          - tcpdump             # diagnose network issues by watching ports
+          - inetutils           # network utilities like hostname
+          - net-tools           # network utilites like arp, netstat
+          - iperf3              # network speed test tool
+          - iproute2            # network utilities like ss
+          - bind                # DNS utilities, like nslookup
+          - nload               # monitor bandwidth
+          - sysfsutils          # utilities to deal with sysfs
+          - lsof                # list open files
+          - fuse                # mounting file systems
+          - cockpit             # browser-based administration tool
+          - cockpit-storaged    # for configuring and monitoring storage, disks and mounts on the system.
+          - cockpit-packagekit  # for managing system packages.
+          - firewalld           # for managing the Firewall using the Cockpit in Networking.
+          - udisks2             # for managing Storage.
 
   # YAY FOR THE AUR REPOSITORY ----------------------------------------------------
     - name: disable the need for password for pacman to allow yay install
