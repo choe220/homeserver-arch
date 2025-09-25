@@ -23,6 +23,7 @@
           - curl                # download utility
           - wget                # download utility
           - rsync               # copy utility
+          - vsftpd              # sftp server
           - yazi                # file manager
           - fzf                 # fuzzy filter, useful for file search
           - bat                 # prettier cat
