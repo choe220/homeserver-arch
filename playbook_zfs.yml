@@ -1,0 +1,189 @@
+---
+- name: playbook_zfs.yml - setup zfs
+  hosts: all
+  become: yes
+  vars:
+    pool_name: "tank"
+
+  tasks:
+    - name: install zfs
+      yay:
+        name:
+          - zfs-linux
+
+    - name: enable services
+      systemd:
+        name:
+          - zfs.target
+          - zfs-import.target
+          - zfs-import-cache
+        enabled: yes
+        state: started
+
+    - name: Get current disk information
+      command: lsblk -d -n -o NAME,SIZE,TYPE,MOUNTPOINT
+      register: disk_info
+      changed_when: false
+
+    - name: Display available disks
+      debug:
+        msg: |
+          Available disks:
+          {{ disk_info.stdout }}
+
+    - name: Prompt for disk selection
+      pause:
+        prompt: |
+          Please select disks to add to the ZFS pool '{{ pool_name }}'.
+          Enter disk names separated by spaces (e.g., sdb sdc sdd).
+          Use full device paths like /dev/sdb or just the device names like sdb.
+          Available disks are shown above.
+      register: selected_disks
+
+    - name: Process selected disks
+      set_fact:
+        disk_list: "{{ selected_disks.user_input.split() }}"
+
+    - name: Normalize disk paths
+      set_fact:
+        normalized_disks: "{{ normalized_disks | default([]) + ['/dev/' + item if not item.startswith('/dev/') else item] }}"
+      loop: "{{ disk_list }}"
+
+    - name: Verify selected disks exist
+      stat:
+        path: "{{ item }}"
+      register: disk_check
+      loop: "{{ normalized_disks }}"
+      failed_when: not disk_check.stat.exists
+
+    - name: Display selected disks for confirmation
+      debug:
+        msg: "Selected disks: {{ normalized_disks | join(' ') }}"
+
+    - name: Confirm ZFS pool creation
+      pause:
+        prompt: |
+          About to create ZFS pool '{{ pool_name }}' with disks: {{ normalized_disks | join(' ') }}
+          This will DESTROY all data on these disks!
+          Type 'yes' to continue, anything else to abort
+      register: confirmation
+
+    - name: Abort if not confirmed
+      fail:
+        msg: "ZFS pool creation aborted by user"
+      when: confirmation.user_input != "yes"
+
+    - name: Create ZFS pool
+      command: zpool create {{ pool_name }} raidz {{ normalized_disks | join(' ') }}
+      register: pool_creation
+
+    - name: Display pool status
+      command: zpool status {{ pool_name }}
+      register: pool_status
+
+    - name: Show final pool information
+      debug:
+        msg: |
+          ZFS pool '{{ pool_name }}' created successfully!
+          Pool status:
+          {{ pool_status.stdout }}
+
+    - name: Create /etc/zfs/zfs-list.cache directory
+      file:
+        path: /etc/zfs/zfs-list.cache
+        state: directory
+        mode: '0755'
+
+    - name: Check if ZFS Event Daemon directory exists
+      file:
+        path: /etc/zfs/zed.d
+        state: directory
+        mode: '0755'
+
+    - name: Check if ZED history script exists
+      stat:
+        path: /usr/lib/zfs/zed.d/history_event-zfs-list-cacher.sh
+      register: zed_script_source
+
+    - name: Fail if ZED history script is missing
+      fail:
+        msg: |
+          ZED history script not found at /usr/lib/zfs/zed.d/history_event-zfs-list-cacher.sh
+          This usually means OpenZFS version is < 2.0.0 or ZFS is not properly installed.
+      when: not zed_script_source.stat.exists
+
+    - name: Check if ZED history script symlink exists
+      stat:
+        path: /etc/zfs/zed.d/history_event-zfs-list-cacher.sh
+      register: zed_script_link
+
+    - name: Create ZED history event script symlink
+      file:
+        src: /usr/lib/zfs/zed.d/history_event-zfs-list-cacher.sh
+        dest: /etc/zfs/zed.d/history_event-zfs-list-cacher.sh
+        state: link
+      when: not zed_script_link.stat.exists
+
+    - name: Create cache file for tank pool
+      file:
+        path: /etc/zfs/zfs-list.cache/tank
+        state: touch
+        mode: '0644'
+
+    - name: Enable zfs.target
+      systemd:
+        name: zfs.target
+        enabled: yes
+
+    - name: Enable and start zfs-zed.service
+      systemd:
+        name: zfs-zed.service
+        enabled: yes
+        state: started
+
+    - name: Wait for ZED to initialize
+      pause:
+        seconds: 5
+
+    - name: Check tank cache file population status
+      slurp:
+        src: /etc/zfs/zfs-list.cache/tank
+      register: tank_cache_check
+      failed_when: false
+
+    - name: Trigger cache update if tank cache file is empty
+      block:
+        - name: Toggle canmount on tank root to trigger ZED cache update
+          command: zfs set canmount=off tank
+          
+        - name: Wait for ZED to process event
+          pause:
+            seconds: 3
+            
+        - name: Restore canmount setting
+          command: zfs set canmount=on tank
+
+      when: 
+        - tank_cache_check.content is defined
+        - (tank_cache_check.content | b64decode | trim == "")
+
+    - name: Final verification of tank cache file
+      slurp:
+        src: /etc/zfs/zfs-list.cache/tank
+      register: final_tank_cache
+
+    - name: Display zfs-mount-generator setup results
+      debug:
+        msg: |
+          ZFS Mount Generator Setup Results for 'tank' pool:
+          =================================================
+          - Cache directory: /etc/zfs/zfs-list.cache ✓
+          - ZED script symlink: {{ 'exists' if zed_script_link.stat.exists else 'created' }} ✓
+          - zfs.target: enabled ✓
+          - zfs-zed.service: enabled and started ✓
+          - Tank cache file: {{ 'populated' if (final_tank_cache.content | b64decode | trim != "") else 'empty (manual trigger may be needed)' }}
+          
+          Setup complete! ZFS filesystems in the 'tank' pool will be automatically mounted by systemd on boot.
+          
+          Note: If cache file shows as empty, manually trigger an update with:
+          zfs set canmount=off tank && zfs set canmount=on tank
