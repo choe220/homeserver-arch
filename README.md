@@ -18,8 +18,9 @@ Install arch linux ([archinstall](https://github.com/archlinux/archinstall)), lo
 
 - run the playbooks you want
     - `ansible-playbook -u $USER -K playbook_core.yml`
-    - `ansible-playbook -u $USER -K playbook_zsh.yml`
+    - `ansible-playbook -u $USER -K playbook_fish.yml`
     - `ansible-playbook -u $USER -K playbook_docker.yml`
+    - `ansible-playbook -u $USER -K playbook_zfs.yml`
 
 yes, you write `$USER` there, which puts in the user you are logged in
 the `-K` is short for `--ask-become-pass` which will prompt for password
@@ -30,5 +31,25 @@ and bunch of its dependencies. Saves \~600MB and noise during updates.
 
 - `sudo pacman -Rns ansible`
 
+# ZFS
+After installing zfs you will need to know what disks are available. If /dev/sdb /dev/sdc /dev/sdd
+`zpool create tank raidz /dev/sdb /dev/sdc /dev/sdd`
+
+To create the individual datasets, the command is as follows:
+`zfs create tank/{dataset name}`
+---
+`zfs create tank/media`
+`zfs create tank/configs`
+`zfs create tank/docker`
+`zfs create tank/downloads`
+`zfs create tank/backups`
+---
+
+Once the datasets are created auto mounting is the next priority. There are several services that need enabled. 
+`systemctl enable --now zfs-import-cache`
+`systemctl
+
+Export the pool to:
+`zpool set cachefile=/etc/zfs/zpool.cache tank`
 
 # Useful Commands
