@@ -13,9 +13,7 @@ if status is-interactive
 end
 
 alias pamcan pacman
-alias ls 'eza --icons'
 alias clear "printf '\033[2J\033[3J\033[1;1H'"
-alias q 'qs -c ii'
 alias y yazi
 alias cat bat
 
