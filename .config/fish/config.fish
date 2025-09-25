@@ -12,6 +12,8 @@ if status is-interactive
 
 end
 
+starship init fish | source
+
 alias pamcan pacman
 alias clear "printf '\033[2J\033[3J\033[1;1H'"
 alias y yazi

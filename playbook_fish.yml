@@ -10,6 +10,8 @@
         name:
           - fish
           - curl
+          - starship
+          - ttf-jetbrains-mono-nerd
     
     - name: change shell
       become: yes
@@ -24,6 +26,10 @@
         src: .config/fish
         dest: ~/.config
         mode: preserve
+
+    - name: set starship configuration
+      become: no
+      command: starship preset pastel-powerline -o ~/.config/starship.toml
     
     # - name: ensure /root/.config exists
     #   file:
