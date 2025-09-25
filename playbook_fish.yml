@@ -19,11 +19,11 @@
 
     # SETUP SHELL AND CONFIGS
     - name: copy config directory with prefernces, hotkeys, syntax highlight
-        become: no
-        copy:
-          src: .config/fish
-          dest: ~/.config
-          mode: preserve
+      become: no
+      copy:
+        src: .config/fish
+        dest: ~/.config
+        mode: preserve
     
     - name: ensure /root/.config exists
       file:
