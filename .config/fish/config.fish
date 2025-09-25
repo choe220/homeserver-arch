@@ -14,10 +14,14 @@ end
 
 starship init fish | source
 
+set EDITOR micro
+set VISUAL micro
+
 alias pamcan pacman
 alias clear "printf '\033[2J\033[3J\033[1;1H'"
 alias y yazi
 alias cat bat
+alias f fzf
 
 # function fish_prompt
 #   set_color cyan; echo (pwd)

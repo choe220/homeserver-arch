@@ -16,6 +16,7 @@
         update_cache: yes
         name:
           - nano                # editor
+          - micro               # editor
           - man-db              # help pages
           - tldr                # easy help pages
           - git                 # to clone github repos
@@ -387,10 +388,42 @@
         force: yes
         follow: false
 
+    # SETUP MICRO TEXT EDITOR  ---------------------------------------------------
+    - name: install micro text editor
+      pacman:
+        name:
+          - micro
+
+    - name: copy config directory with prefernces, hotkeys, syntax highlight
+      become: no
+      copy:
+        src: .config/micro
+        dest: ~/.config
+        mode: preserve
+
+    - name: ensure /root/.config exists
+      file:
+        path: /root/.config
+        state: directory
+        mode: '0755'
+
+    - name: remove root micro config if it exists
+      file:
+        path: /root/.config/micro
+        state: absent
+
+    - name: symlink users micro config for the root, so that it works in sudo
+      file:
+        src: "/home/{{ ansible_user }}/.config/micro"
+        dest: /root/.config/micro
+        state: link
+        force: yes
+        follow: false
+
     - name: set default editor in .bashrc
       become: no
       blockinfile:
         path: ~/.bashrc
         block: |
-          export EDITOR=yazi
-          export VISUAL=yazi
+          export EDITOR=micro
+          export VISUAL=micro
