@@ -17,7 +17,7 @@
         name:
           - nano                # editor
           - man-db              # help pages
-          - tdlr                # easy help pages
+          - tldr                # easy help pages
           - git                 # to clone github repos
           - curl                # download utility
           - wget                # download utility
