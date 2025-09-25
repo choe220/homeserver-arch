@@ -11,7 +11,7 @@ Install arch linux ([archinstall](https://github.com/archlinux/archinstall)), lo
     `sudo pacman -S ansible git`
 
 - clone the repo
-    `git clone TBD`
+    `git clone https://github.com/choe220/homeserver-arch`
 
 - enter the directory
     `cd homeserver`
