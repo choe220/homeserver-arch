@@ -66,7 +66,7 @@
       when: not compose_file.stat.exists
       
     - name: Start Portainer with docker compose
-      shell: docker compose up -d -f portainer_compose.yml
+      shell: docker compose -f portainer_compose.yml up -d 
       args:
         chdir: /tank/docker
       register: compose_result
