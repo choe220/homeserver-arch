@@ -362,6 +362,13 @@
       when:
         - networkd_status.stdout == "active"
 
+  # ENABLE SERVICES
+    - name: enable cockpit
+      systemd:
+        name: cockpit.socket
+        enabled: yes
+        state: started
+
   # SETUP SHELL AND CONFIGS
     - name: copy config directory with prefernces, hotkeys, syntax highlight
       become: no
