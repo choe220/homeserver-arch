@@ -11,12 +11,21 @@
         yay -S zfs-linux --noconfirm --needed
       become: false
 
-    - name: enable services
+    - name: enable zfs target
       systemd:
-        name:
-          - zfs.target
-          - zfs-import.target
-          - zfs-import-cache
+        name: zfs.target
+        enabled: yes
+        state: started
+    
+    - name: enable zfs import target
+      systemd:
+        name: zfs-import.target
+        enabled: yes
+        state: started
+
+    - name: enable zfs import cache
+      systemd:
+        name: zfs-import-cache
         enabled: yes
         state: started
 
