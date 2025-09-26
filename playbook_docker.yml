@@ -47,3 +47,30 @@
               }
             ]
           }
+
+    - name: move docker compose files
+      become: no
+      copy:
+        src: docker/portainer_compose.yml
+        dest: /tank/docker
+        mode: preserve
+
+    - name: Ensure portainer_compose.yml exists
+      stat:
+        path: /tank/docker/portainer_compose.yml
+      register: compose_file
+      
+    - name: Fail if compose file doesn't exist
+      fail:
+        msg: "portainer_compose.yml not found in /tank/docker/"
+      when: not compose_file.stat.exists
+      
+    - name: Start Portainer with docker compose
+      shell: docker compose up -d -f portainer_compose.yml
+      args:
+        chdir: /tank/docker
+      register: compose_result
+      
+    - name: Display compose result
+      debug:
+        var: compose_result.stdout_lines
