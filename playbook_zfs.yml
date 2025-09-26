@@ -181,6 +181,13 @@
         src: /etc/zfs/zfs-list.cache/tank
       register: final_tank_cache
 
+    - name: Set permissions on tank directory
+      file:
+        path: /tank
+        mode: '0777'
+        recurse: yes
+        state: directory
+
     - name: Display zfs-mount-generator setup results
       debug:
         msg: |
