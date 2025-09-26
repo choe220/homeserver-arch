@@ -7,7 +7,7 @@
 
   tasks:
     - name: install zfs
-      yay:
+      kewlfft.aur.aur:
         name:
           - zfs-linux
 
