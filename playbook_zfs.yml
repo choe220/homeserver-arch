@@ -7,9 +7,8 @@
 
   tasks:
     - name: install zfs
-      kewlfft.aur.aur:
-        name:
-          - zfs-linux
+      shell: |
+        yay -S zfs-linux --noconfirm --needed
 
     - name: enable services
       systemd:
