@@ -1,0 +1,19 @@
+networks:
+  traefik_internal:
+    name: traefik-internal
+    external: true
+
+services:
+  traefik-internal:
+    image: traefik:v3.5
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - traefik_internal
