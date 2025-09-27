@@ -369,6 +369,26 @@
         enabled: yes
         state: started
 
+    # FTP Stuff
+    - name: enable FTP server
+      systemd:
+        name: vsftpd
+        enabled: yes
+        state: started
+
+    - name: Enable local users to log in
+      lineinfile:
+        path: /etc/vsftpd.conf
+        regexp: '^#?local_enable='
+        line: 'local_enable=YES'
+        backup: yes
+      notify: restart vsftpd
+
+    - name: Restart vsftpd handler
+      systemd:
+        name: vsftpd
+        state: restarted
+
   # SETUP SHELL AND CONFIGS
     - name: copy config directory with prefernces, hotkeys, syntax highlight
       become: no
